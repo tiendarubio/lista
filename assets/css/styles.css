@@ -1,0 +1,72 @@
+/* Estilos originales */
+
+/* Asegura que la lista desplegable no exceda el ancho del campo de búsqueda */
+#suggestions {
+    max-width: 100%;
+}
+
+/* Hacer la tabla desplazable horizontalmente */
+.table-responsive {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.table-responsive > .table {
+    width: 100%;
+    margin-bottom: 0;
+    overflow-y: hidden;
+    -ms-overflow-style: -ms-autohiding-scrollbar;
+}
+
+/* Estilos adicionales añadidos desde lista.html */
+
+/* Botones personalizados */
+.btn-custom {
+    padding: 10px;
+    font-size: 14px;
+    border-radius: 8px;
+}
+
+/* Logo de la tienda */
+.logo {
+    max-width: 150px;
+    margin: 20px auto;
+    display: block;
+}
+
+/* Contenedor de secciones */
+.section-container {
+    padding: 20px;
+    border: 1px solid #dee2e6;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    background-color: #f8f9fa;
+}
+
+/* Título de secciones */
+.section-title {
+    margin-bottom: 20px;
+    font-weight: bold;
+}
+
+/* Grupo de botones personalizado */
+.btn-group-custom {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.btn-group-custom .btn {
+    flex: 1 1 calc(20% - 10px); /* Ajuste para que 5 botones ocupen toda la fila */
+    min-width: 100px;
+}
+
+@media (max-width: 576px) {
+    .btn-group-custom .btn {
+        flex: 1 1 48%; /* 2 botones por fila en pantallas pequeñas */
+        margin-bottom: 10px;
+    }
+}
