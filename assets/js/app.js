@@ -4,15 +4,15 @@
 const googleSheetsApiKey = 'AIzaSyAvWylEG-2jRlgYXZBEcPtAWvV-fyBPZgo';
 
 // API Key o Access Key para JSONBin.io
-const jsonBinApiKey = '$2a$10$lY1eOoGFYYSBOZ2BO0XmIekSKh7Jx3bwOTjNVtEGV/3Vx7dKv4r5a';  // Reemplaza con la API Key correcta
+const jsonBinApiKey = '$2a$10$qmB/eQH.qDgT2BmwIf98seyFbgFIhAns2U3g8jsMah7/Z4XApa.IS';  // Reemplaza con la API Key correcta
 
 // Identificadores de Bin en JSONBin.io
 const binIds = {
-    lista_sexta_calle: '671d687facd3cb34a89d842d',
-    lista_centro_comercial: '671d6854ad19ca34f8bf0c53',
-    lista_avenida_morazan: '671d6844ad19ca34f8bf0c4e',
-    sala_venta_sexta_calle: '671d6872ad19ca34f8bf0c5e',  // Identificador para Sala de Venta Sexta Calle
-    sala_venta_centro_comercial: '671d6863ad19ca34f8bf0c58'  // Identificador para Sala de Venta Centro Comercial
+    lista_sexta_calle: '67619af2ad19ca34f8dcbcad',
+    lista_centro_comercial: '67619b51acd3cb34a8bb3a22',
+    lista_avenida_morazan: '67619b66ad19ca34f8dcbcef',
+    sala_venta_sexta_calle: '67619b0cad19ca34f8dcbcc0',  // Identificador para Sala de Venta Sexta Calle
+    sala_venta_centro_comercial: '67619b2de41b4d34e46703c2'  // Identificador para Sala de Venta Centro Comercial
 };
 
 
