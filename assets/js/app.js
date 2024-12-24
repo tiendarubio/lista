@@ -45,7 +45,7 @@ function loadListFromJSONBin(store) {
 // Cargar productos desde Google Sheets utilizando la API
 function loadProductsFromGoogleSheets() {
     const sheetId = '1b5B9vp0GKc4T_mORssdj-J2vgc-xEO5YAFkcrVX-nHI';
-    const sheetRange = 'bd!A2:C3418';
+    const sheetRange = 'bd!A2:C5000';
     
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${sheetRange}?key=${googleSheetsApiKey}`;
     
