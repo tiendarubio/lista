@@ -418,4 +418,36 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         updateRowNumbers();
     }
+
+    // Variable para alternar entre orden ascendente y descendente
+let isAscending = true;
+
+// Función para ordenar la tabla por la columna "Bodega" al hacer clic en el encabezado
+function sortTableByBodegaFromHeader() {
+    const pedidoList = document.getElementById('pedidoList');
+    const rows = Array.from(pedidoList.getElementsByTagName('tr'));
+
+    // Ordenar las filas por la columna "Bodega" (índice 4)
+    rows.sort((a, b) => {
+        const bodegaA = a.cells[4].innerText.toLowerCase();
+        const bodegaB = b.cells[4].innerText.toLowerCase();
+
+        if (isAscending) {
+            return bodegaA.localeCompare(bodegaB);
+        } else {
+            return bodegaB.localeCompare(bodegaA);
+        }
+    });
+
+    // Alternar el orden para el próximo clic
+    isAscending = !isAscending;
+
+    // Vaciar la tabla y agregar las filas ordenadas
+    pedidoList.innerHTML = '';
+    rows.forEach(row => pedidoList.appendChild(row));
+
+    // Actualizar los números de las filas
+    updateRowNumbers();
+}
+
 });

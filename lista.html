@@ -62,10 +62,14 @@
                             <th>Producto</th>
                             <th>Cantidad/Comentario</th>
                             <th>Código</th>
-                            <th>Bodega</th>
+                            <th onclick="sortTableByBodegaFromHeader()" style="cursor: pointer;">
+                                Bodega <i class="fas fa-sort"></i>
+                            </th>
+                            
                             <th>Acciones</th>
                         </tr>
                     </thead>
+                    
                     <tbody id="pedidoList">
                         <!-- Aquí se agregarán los productos seleccionados -->
                     </tbody>
