@@ -449,5 +449,7 @@ function sortTableByBodegaFromHeader() {
     // Actualizar los números de las filas
     updateRowNumbers();
 }
+// Exponer la función al ámbito global
+window.sortTableByBodegaFromHeader = sortTableByBodegaFromHeader;
 
 });
