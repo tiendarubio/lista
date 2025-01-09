@@ -386,18 +386,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Módulo: Función para imprimir un PDF de la lista de pedidos
     // ===========================================================
-    printPDFButton.addEventListener('click', () => {
+    printPDFButton.addEventListener('click', async () => {
         const pedidoList = document.getElementById('pedidoList');
         if (pedidoList.rows.length === 0) {
             Swal.fire('Error', 'No hay productos en la lista para imprimir.', 'error');
             return;
         }
-
+    
+        // Obtener la fecha de guardado desde la interfaz
+        const fechaGuardadoTexto = document.getElementById('fechaLista').textContent || '';
+        const fechaGuardado = fechaGuardadoTexto.replace('Última actualización: ', ''); // Limpiar el texto
+    
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
+    
+        // Añadir encabezados
         doc.text(`Tienda: ${storeName}`, 10, 10);
+        doc.text(`Fecha de última actualización: ${fechaGuardado}`, 10, 20); // Mostrar fecha de guardado
+    
+        // Añadir contenido de la tabla
         doc.autoTable({
-            startY: 20,
+            startY: 30,
             head: [['#', 'Producto', 'Cantidad/Comentario', 'Código', 'Bodega']],
             body: Array.from(pedidoList.rows).map(row => [
                 row.cells[0].innerText,
@@ -407,8 +416,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 row.cells[4].innerText
             ])
         });
-        doc.output('dataurlnewwindow'); // Abre el PDF en una nueva ventana
+    
+        // Abrir el PDF en una nueva ventana para impresión
+        doc.output('dataurlnewwindow'); // Esto abre el PDF en una nueva pestaña/lista para impresión
     });
+    
 
     // Módulo: Función para actualizar los datos en JSONBin.io
     // ========================================================
