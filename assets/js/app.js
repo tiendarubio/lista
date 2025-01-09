@@ -21,10 +21,10 @@ const binIds = {
 // Cargar lista de pedidos desde JSONBin.io basado en la tienda seleccionada
 function loadListFromJSONBin(store) {
     const binId = binIds[store];
-    
+
     return fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, {
         headers: {
-            'X-Access-Key': jsonBinApiKey  // Aquí usas la API Key de JSONBin.io
+            'X-Access-Key': jsonBinApiKey
         }
     })
     .then(response => {
@@ -33,12 +33,39 @@ function loadListFromJSONBin(store) {
         }
         return response.json();
     })
-    .then(data => data.record.data || [])
+    .then(data => {
+        // Extraer la fecha de guardado y mostrarla
+        const fechaGuardado = data.record.fechaGuardado || new Date().toISOString();
+        mostrarFechaLista(fechaGuardado);
+
+        // Retornar la lista de productos
+        return data.record.data || [];
+    })
     .catch(error => {
-        console.error('Error al cargar los datos desde JSONBin.io:', error);
+        console.error(`Error al cargar los datos desde JSONBin.io para la tienda ${store}:`, error);
         return [];
     });
 }
+
+function mostrarFechaLista(fechaGuardado) {
+    const fecha = new Date(fechaGuardado);
+    const opcionesFormato = {
+        timeZone: 'America/El_Salvador',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+    };
+
+    const fechaFormateada = fecha.toLocaleString('es-SV', opcionesFormato);
+    const fechaElemento = document.getElementById('fechaLista');
+    if (fechaElemento) {
+        fechaElemento.textContent = `Última actualización: ${fechaFormateada}`;
+    }
+}
+
 
 // Módulo: Función para cargar productos desde Google Sheets
 // =========================================================
@@ -68,15 +95,20 @@ function loadProductsFromGoogleSheets() {
 // Guardar lista de pedidos en JSONBin.io basado en la tienda seleccionada
 function saveListToJSONBin(store, listData) {
     const binId = binIds[store];
-    const payload = { data: listData };
-    
+    const fechaGuardado = new Date().toISOString(); // Capturar fecha y hora actual en formato ISO
+
+    const payload = {
+        data: listData,           // Lista de productos
+        fechaGuardado             // Fecha y hora del guardado
+    };
+
     return fetch(`https://api.jsonbin.io/v3/b/${binId}`, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',
-            'X-Access-Key': jsonBinApiKey  // Aquí usas la API Key de JSONBin.io
+            'X-Access-Key': jsonBinApiKey
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload) // Convertir el objeto a JSON
     })
     .then(response => {
         if (!response.ok) {
@@ -85,13 +117,15 @@ function saveListToJSONBin(store, listData) {
         return response.json();
     })
     .then(data => {
-        console.log('Datos guardados correctamente:', data);
+        console.log(`Datos guardados correctamente para la tienda ${store}:`, data);
+        mostrarFechaLista(fechaGuardado); // Actualiza la fecha en la interfaz
         return data;
     })
     .catch(error => {
-        console.error('Error al guardar los datos en JSONBin.io:', error);
+        console.error(`Error al guardar los datos en JSONBin.io para la tienda ${store}:`, error);
     });
 }
+
 
 // Módulo: Función de inicialización de la página (DOM Loaded)
 // ============================================================
@@ -310,18 +344,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Módulo: Función para generar un PDF de la lista de pedidos
     // ==========================================================
-    generatePDFButton.addEventListener('click', () => {
+    generatePDFButton.addEventListener('click', async () => {
         const pedidoList = document.getElementById('pedidoList');
         if (pedidoList.rows.length === 0) {
             Swal.fire('Error', 'No hay productos en la lista para generar PDF.', 'error');
             return;
         }
-
-        const { jsPDF } = window.jspdf; // Accede a jsPDF desde el módulo UMD
+    
+        // Obtener la fecha de guardado desde la interfaz
+        const fechaGuardadoTexto = document.getElementById('fechaLista').textContent || '';
+        const fechaGuardado = fechaGuardadoTexto.replace('Última actualización: ', ''); // Limpiar el texto
+    
+        const fechaActual = new Date(); // Fecha actual para el nombre del archivo
+        const fechaFormateadaArchivo = fechaActual.toISOString().split('T')[0]; // YYYY-MM-DD
+        const nombreArchivo = `${storeName.replace(/[^a-zA-Z0-9]/g, '_')}_${fechaFormateadaArchivo}.pdf`;
+    
+        const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
-        doc.text(`Tienda: ${storeName}`, 10, 10); // Añadir el nombre de la tienda en el PDF
-        doc.autoTable({ 
-            startY: 20, // Añade un poco de espacio después del título de la tienda
+    
+        // Añadir encabezados
+        doc.text(`Tienda: ${storeName}`, 10, 10);
+        doc.text(`Fecha de última actualización: ${fechaGuardado}`, 10, 20); // Mostrar fecha de guardado
+    
+        // Añadir contenido de la tabla
+        doc.autoTable({
+            startY: 30,
             head: [['#', 'Producto', 'Cantidad/Comentario', 'Código', 'Bodega']],
             body: Array.from(pedidoList.rows).map(row => [
                 row.cells[0].innerText,
@@ -331,8 +378,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 row.cells[4].innerText
             ])
         });
-        doc.save('lista_pedido.pdf');
+    
+        // Guardar el PDF
+        doc.save(nombreArchivo);
     });
+    
 
     // Módulo: Función para imprimir un PDF de la lista de pedidos
     // ===========================================================
