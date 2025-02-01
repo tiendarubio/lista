@@ -20,8 +20,6 @@
     -ms-overflow-style: -ms-autohiding-scrollbar;
 }
 
-/* Estilos adicionales añadidos desde lista.html */
-
 /* Botones personalizados */
 .btn-custom {
     padding: 10px;
@@ -69,4 +67,35 @@
         flex: 1 1 48%; /* 2 botones por fila en pantallas pequeñas */
         margin-bottom: 10px;
     }
+}
+
+/* Nuevos estilos añadidos */
+
+/* Aplicar Calibri como fuente global */
+body {
+    font-family: 'Calibri', Arial, sans-serif;
+}
+
+/* Estilo para el título de la tienda */
+#storeTitle {
+    font-size: 1.8rem; /* Tamaño proporcional para el título */
+    text-align: center;
+    font-weight: bold; /* Destacado */
+    margin-bottom: 10px;
+}
+
+/* Estilo para la fecha de la lista */
+#fechaLista {
+    font-size: 1.2rem; /* Más pequeño que el título de la tienda */
+    text-align: center;
+    color: #555; /* Color más suave */
+    margin-top: 5px;
+}
+
+/* Opcional: Unificar estilos con el diseño existente */
+#storeTitle,
+#fechaLista {
+    padding: 5px;
+    background-color: #f8f9fa; /* Fondo claro */
+    border-radius: 5px; /* Bordes redondeados */
 }

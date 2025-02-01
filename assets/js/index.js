@@ -10,3 +10,6 @@ document.getElementById('avenMorazan').addEventListener('click', function () {
 document.getElementById('centroComercial').addEventListener('click', function () {
     window.location.href = 'lista.html?store=lista_centro_comercial';
 });
+document.getElementById('avenMorazan').addEventListener('click', function () {
+    window.location.href = 'lista.html?store=lista_avenida_morazan';
+});

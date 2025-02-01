@@ -11,8 +11,9 @@ const binIds = {
     lista_sexta_calle: '67619af2ad19ca34f8dcbcad',
     lista_centro_comercial: '67619b51acd3cb34a8bb3a22',
     lista_avenida_morazan: '67619b66ad19ca34f8dcbcef',
-    sala_venta_sexta_calle: '67619b0cad19ca34f8dcbcc0',  // Identificador para Sala de Venta Sexta Calle
-    sala_venta_centro_comercial: '67619b2de41b4d34e46703c2'  // Identificador para Sala de Venta Centro Comercial
+    lista_pedido_bodeguita: '679e491facd3cb34a8d6951a', // Nueva lista
+    sala_venta_sexta_calle: '67619b0cad19ca34f8dcbcc0',
+    sala_venta_centro_comercial: '67619b2de41b4d34e46703c2'
 };
 
 
@@ -144,28 +145,43 @@ document.addEventListener('DOMContentLoaded', () => {
             'lista_avenida_morazan': 'AVENIDA MORAZÁN - Lista de Pedido a Bodega',
             'lista_centro_comercial': 'CENTRO COMERCIAL - Lista de Pedido a Bodega',
             'sala_venta_sexta_calle': 'SEXTA CALLE - Lista de Pedido a Sala de Venta',
-            'sala_venta_centro_comercial': 'CENTRO COMERCIAL - Lista de Pedido a Sala de Venta'
+            'sala_venta_centro_comercial': 'CENTRO COMERCIAL - Lista de Pedido a Sala de Venta',
+            'lista_pedido_bodeguita': 'AVENIDA MORAZÁN - Lista de Pedido a Bodeguita' // Nuevo título
         };
+        
         storeName = storeTitle[store];
         document.getElementById('storeTitle').textContent = `Tienda: ${storeName}`;
 
         // Manejo del botón de cambio de tipo de lista
         const switchButton = document.getElementById('switchToSalaVenta');
-        if (['lista_sexta_calle', 'lista_centro_comercial'].includes(store)) {
-            switchButton.style.display = 'block';
-            switchButton.onclick = () => {
-                const newStoreType = store.replace('lista_', 'sala_venta_');
-                window.location.href = `lista.html?store=${newStoreType}`;
-            };
-        } else if (['sala_venta_sexta_calle', 'sala_venta_centro_comercial'].includes(store)) {
-            switchButton.style.display = 'block';
-            switchButton.onclick = () => {
-                const newStoreType = store.replace('sala_venta_', 'lista_');
-                window.location.href = `lista.html?store=${newStoreType}`;
-            };
-        } else {
-            switchButton.style.display = 'none';
-        }
+
+if (['lista_sexta_calle', 'lista_centro_comercial'].includes(store)) {
+    switchButton.style.display = 'block';
+    switchButton.onclick = () => {
+        const newStoreType = store.replace('lista_', 'sala_venta_');
+        window.location.href = `lista.html?store=${newStoreType}`;
+    };
+} else if (['sala_venta_sexta_calle', 'sala_venta_centro_comercial'].includes(store)) {
+    switchButton.style.display = 'block';
+    switchButton.onclick = () => {
+        const newStoreType = store.replace('sala_venta_', 'lista_');
+        window.location.href = `lista.html?store=${newStoreType}`;
+    };
+} else if (store === 'lista_avenida_morazan') {
+    switchButton.style.display = 'block';
+    switchButton.onclick = () => {
+        window.location.href = `lista.html?store=lista_pedido_bodeguita`;
+    };
+} else if (store === 'lista_pedido_bodeguita') {
+    switchButton.style.display = 'block';
+    switchButton.onclick = () => {
+        window.location.href = `lista.html?store=lista_avenida_morazan`;
+    };
+} else {
+    switchButton.style.display = 'none';
+}
+
+
     }
 
     // Módulo: Búsqueda y sugerencias en Google Sheets
@@ -421,6 +437,40 @@ document.addEventListener('DOMContentLoaded', () => {
         doc.output('dataurlnewwindow'); // Esto abre el PDF en una nueva pestaña/lista para impresión
     });
     
+    // Función para generar un archivo Excel con la tabla de productos
+document.getElementById('generateExcel').addEventListener('click', () => {
+    const pedidoList = document.getElementById('pedidoList');
+    if (pedidoList.rows.length === 0) {
+        Swal.fire('Error', 'No hay productos en la lista para generar Excel.', 'error');
+        return;
+    }
+
+    // Crear un array con los encabezados
+    const headers = ['#', 'Producto', 'Cantidad/Comentario', 'Código', 'Bodega'];
+
+    // Crear un array con los datos de las filas
+    const data = Array.from(pedidoList.rows).map(row => [
+        row.cells[0].innerText, // Número
+        row.cells[1].innerText, // Producto
+        row.cells[2].querySelector('input').value, // Cantidad/Comentario
+        row.cells[3].innerText, // Código
+        row.cells[4].innerText  // Bodega
+    ]);
+
+    // Añadir los encabezados al inicio del array
+    data.unshift(headers);
+
+    // Crear un libro de trabajo y una hoja de trabajo
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    XLSX.utils.book_append_sheet(wb, ws, 'Lista de Pedido');
+
+    // Generar el archivo Excel y descargarlo
+    const fechaActual = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    const nombreArchivo = `Lista_Pedido_${fechaActual}.xlsx`;
+    XLSX.writeFile(wb, nombreArchivo);
+});
+
 
     // Módulo: Función para actualizar los datos en JSONBin.io
     // ========================================================
@@ -459,7 +509,9 @@ document.addEventListener('DOMContentLoaded', () => {
         clearListButton.disabled = !hasItems;
         generatePDFButton.disabled = !hasItems;
         printPDFButton.disabled = !hasItems;
+        document.getElementById('generateExcel').disabled = !hasItems; // Habilitar o deshabilitar el botón de Excel
     }
+    
 
     // Módulo: Función para renderizar la lista de productos
     // =====================================================
