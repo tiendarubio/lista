@@ -1,10 +1,10 @@
 // Módulo: Variables Globales de API
 // ===================================
 // API Key para Google Sheets
-const googleSheetsApiKey = process.env.GOOGLE_SHEETS_API_KEY;
+const googleSheetsApiKey = process.env.NEXT_PUBLIC_GOOGLE_SHEETS_API_KEY;
 
 // API Key o Access Key para JSONBin.io
-const jsonBinApiKey = process.env.JSONBIN_API_KEY;  // Reemplaza con la API Key correcta
+const jsonBinApiKey = process.env.NEXT_PUBLIC_JSONBIN_API_KEY;  // Reemplaza con la API Key correcta
 
 // Identificadores de Bin en JSONBin.io
 const binIds = {
