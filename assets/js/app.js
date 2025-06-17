@@ -288,25 +288,86 @@ if (['lista_sexta_calle', 'lista_centro_comercial'].includes(store)) {
 
     // Módulo: Función para guardar la lista de productos
     // ==================================================
+    // INICIO: Guardar lista con validación
     saveListButton.addEventListener('click', () => {
-        const pedidoList = document.getElementById('pedidoList');
-        const listData = [];
-        const rows = pedidoList.getElementsByTagName('tr');
+    const pedidoList = document.getElementById('pedidoList');
+    const listData = [];
+    const rows = pedidoList.getElementsByTagName('tr');
 
-        Array.from(rows).forEach((row) => {
-            const productData = {
-                PRODUCTO: row.cells[1].innerText,
-                CANTIDAD_COMENTARIO: row.cells[2].querySelector('input').value,
-                CODIGO: row.cells[3].innerText,
-                BODEGA: row.cells[4].innerText
-            };
-            listData.push(productData);
-        });
+    // Verificar si la lista está vacía
+    if (pedidoList.rows.length === 0) {
+        Swal.fire('Error', 'No hay productos en la lista para guardar.', 'error');
+        return;
+    }
 
-        saveListToJSONBin(store, listData);
+    // Validar que todos los productos tengan comentario o cantidad
+    const isValid = Array.from(rows).every(row =>
+        row.cells[2].querySelector('input').value.trim() !== ''
+    );
 
-        Swal.fire('Guardado', 'La lista ha sido guardada.', 'success');
+    if (!isValid) {
+        Swal.fire('Error', 'Hay productos sin cantidad o comentario.', 'error');
+        return;
+    }
+
+    Array.from(rows).forEach((row) => {
+        const productData = {
+            PRODUCTO: row.cells[1].innerText,
+            CANTIDAD_COMENTARIO: row.cells[2].querySelector('input').value,
+            CODIGO: row.cells[3].innerText,
+            BODEGA: row.cells[4].innerText
+        };
+        listData.push(productData);
     });
+
+    saveListToJSONBin(store, listData);
+
+    // Generar PDF después de guardar
+const fechaGuardadoTexto = document.getElementById('fechaLista').textContent || '';
+const fechaGuardado = fechaGuardadoTexto.replace('Última actualización: ', '');
+const fechaActual = new Date();
+const fechaFormateadaArchivo = fechaActual.toISOString().split('T')[0];
+const nombreArchivo = `${storeName.replace(/[^a-zA-Z0-9]/g, '_')}_${fechaFormateadaArchivo}.pdf`;
+
+const { jsPDF } = window.jspdf;
+const doc = new jsPDF();
+
+doc.setFontSize(12);
+doc.text(`Tienda: ${storeName}`, 10, 10);
+doc.text(`Fecha de última actualización: ${fechaGuardado}`, 10, 18);
+
+doc.autoTable({
+    startY: 28,
+    head: [['#', 'Producto', 'Cantidad/Comentario', 'Código', 'Bodega']],
+    body: Array.from(document.getElementById('pedidoList').rows).map(row => [
+        row.cells[0].innerText,
+        row.cells[1].innerText,
+        row.cells[2].querySelector('input').value,
+        row.cells[3].innerText,
+        row.cells[4].innerText
+    ]),
+    pageBreak: 'auto'
+});
+
+doc.save(nombreArchivo);
+
+
+
+
+
+
+    // Mostrar mensaje visual de éxito
+    const successMsg = document.getElementById('successMessage');
+    if (successMsg) {
+        successMsg.textContent = 'Lista guardada exitosamente.';
+        successMsg.style.display = 'block';
+        setTimeout(() => successMsg.style.display = 'none', 4000);
+    }
+
+    Swal.fire('Guardado', 'La lista ha sido guardada.', 'success');
+    });
+    // FIN
+
 
     // Módulo: Función para eliminar productos
     // =======================================
@@ -360,84 +421,88 @@ if (['lista_sexta_calle', 'lista_centro_comercial'].includes(store)) {
 
     // Módulo: Función para generar un PDF de la lista de pedidos
     // ==========================================================
-    generatePDFButton.addEventListener('click', async () => {
-        const pedidoList = document.getElementById('pedidoList');
-        if (pedidoList.rows.length === 0) {
-            Swal.fire('Error', 'No hay productos en la lista para generar PDF.', 'error');
-            return;
-        }
-    
-        // Obtener la fecha de guardado desde la interfaz
-        const fechaGuardadoTexto = document.getElementById('fechaLista').textContent || '';
-        const fechaGuardado = fechaGuardadoTexto.replace('Última actualización: ', ''); // Limpiar el texto
-    
-        const fechaActual = new Date(); // Fecha actual para el nombre del archivo
-        const fechaFormateadaArchivo = fechaActual.toISOString().split('T')[0]; // YYYY-MM-DD
-        const nombreArchivo = `${storeName.replace(/[^a-zA-Z0-9]/g, '_')}_${fechaFormateadaArchivo}.pdf`;
-    
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
-    
-        // Añadir encabezados
-        doc.text(`Tienda: ${storeName}`, 10, 10);
-        doc.text(`Fecha de última actualización: ${fechaGuardado}`, 10, 20); // Mostrar fecha de guardado
-    
-        // Añadir contenido de la tabla
-        doc.autoTable({
-            startY: 30,
-            head: [['#', 'Producto', 'Cantidad/Comentario', 'Código', 'Bodega']],
-            body: Array.from(pedidoList.rows).map(row => [
-                row.cells[0].innerText,
-                row.cells[1].innerText,
-                row.cells[2].querySelector('input').value,
-                row.cells[3].innerText,
-                row.cells[4].innerText
-            ])
-        });
-    
-        // Guardar el PDF
-        doc.save(nombreArchivo);
+    // INICIO: Generar PDF con validación y metadatos
+generatePDFButton.addEventListener('click', async () => {
+    const pedidoList = document.getElementById('pedidoList');
+    if (pedidoList.rows.length === 0) {
+        Swal.fire('Error', 'No hay productos en la lista para generar PDF.', 'error');
+        return;
+    }
+
+    const fechaGuardadoTexto = document.getElementById('fechaLista').textContent || '';
+    const fechaGuardado = fechaGuardadoTexto.replace('Última actualización: ', '');
+
+    const fechaActual = new Date();
+    const fechaFormateadaArchivo = fechaActual.toISOString().split('T')[0];
+    const nombreArchivo = `${storeName.replace(/[^a-zA-Z0-9]/g, '_')}_${fechaFormateadaArchivo}.pdf`;
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    // Encabezado
+    doc.setFontSize(12);
+    doc.text(`Tienda: ${storeName}`, 10, 10);
+    doc.text(`Fecha de última actualización: ${fechaGuardado}`, 10, 18);
+
+    doc.autoTable({
+        startY: 28,
+        head: [['#', 'Producto', 'Cantidad/Comentario', 'Código', 'Bodega']],
+        body: Array.from(pedidoList.rows).map(row => [
+            row.cells[0].innerText,
+            row.cells[1].innerText,
+            row.cells[2].querySelector('input').value,
+            row.cells[3].innerText,
+            row.cells[4].innerText
+        ]),
+        pageBreak: 'auto'
     });
+
+    doc.save(nombreArchivo);
+});
+// FIN
+
     
 
     // Módulo: Función para imprimir un PDF de la lista de pedidos
     // ===========================================================
-    printPDFButton.addEventListener('click', async () => {
-        const pedidoList = document.getElementById('pedidoList');
-        if (pedidoList.rows.length === 0) {
-            Swal.fire('Error', 'No hay productos en la lista para imprimir.', 'error');
-            return;
-        }
-    
-        // Obtener la fecha de guardado desde la interfaz
-        const fechaGuardadoTexto = document.getElementById('fechaLista').textContent || '';
-        const fechaGuardado = fechaGuardadoTexto.replace('Última actualización: ', ''); // Limpiar el texto
-    
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
-    
-        // Añadir encabezados
-        doc.text(`Tienda: ${storeName}`, 10, 10);
-        doc.text(`Fecha de última actualización: ${fechaGuardado}`, 10, 20); // Mostrar fecha de guardado
-    
-        // Añadir contenido de la tabla
-        doc.autoTable({
-            startY: 30,
-            head: [['#', 'Producto', 'Cantidad/Comentario', 'Código', 'Bodega']],
-            body: Array.from(pedidoList.rows).map(row => [
-                row.cells[0].innerText,
-                row.cells[1].innerText,
-                row.cells[2].querySelector('input').value,
-                row.cells[3].innerText,
-                row.cells[4].innerText
-            ])
-        });
-    
-        // Abrir el PDF en una nueva ventana para impresión
-        doc.output('dataurlnewwindow'); // Esto abre el PDF en una nueva pestaña/lista para impresión
+    // INICIO: Imprimir PDF con validación y metadatos
+printPDFButton.addEventListener('click', async () => {
+    const pedidoList = document.getElementById('pedidoList');
+    if (pedidoList.rows.length === 0) {
+        Swal.fire('Error', 'No hay productos en la lista para imprimir.', 'error');
+        return;
+    }
+
+    const fechaGuardadoTexto = document.getElementById('fechaLista').textContent || '';
+    const fechaGuardado = fechaGuardadoTexto.replace('Última actualización: ', '');
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    doc.setFontSize(12);
+    doc.text(`Tienda: ${storeName}`, 10, 10);
+    doc.text(`Fecha de última actualización: ${fechaGuardado}`, 10, 18);
+
+    doc.autoTable({
+        startY: 28,
+        head: [['#', 'Producto', 'Cantidad/Comentario', 'Código', 'Bodega']],
+        body: Array.from(pedidoList.rows).map(row => [
+            row.cells[0].innerText,
+            row.cells[1].innerText,
+            row.cells[2].querySelector('input').value,
+            row.cells[3].innerText,
+            row.cells[4].innerText
+        ]),
+        pageBreak: 'auto'
     });
+
+    doc.output('dataurlnewwindow');
+});
+// FIN
+
     
     // Función para generar un archivo Excel con la tabla de productos
+// INICIO: Generar Excel con encabezado extendido
 document.getElementById('generateExcel').addEventListener('click', () => {
     const pedidoList = document.getElementById('pedidoList');
     if (pedidoList.rows.length === 0) {
@@ -445,31 +510,36 @@ document.getElementById('generateExcel').addEventListener('click', () => {
         return;
     }
 
-    // Crear un array con los encabezados
-    const headers = ['#', 'Producto', 'Cantidad/Comentario', 'Código', 'Bodega'];
+    const fechaGuardadoTexto = document.getElementById('fechaLista').textContent || '';
+    const fechaActual = new Date().toISOString().split('T')[0];
+    const nombreArchivo = `Lista_Pedido_${fechaActual}.xlsx`;
 
-    // Crear un array con los datos de las filas
+    // Metadatos
+    const encabezadoInfo = [
+        ['Tienda:', storeName],
+        ['Fecha de última actualización:', fechaGuardadoTexto.replace('Última actualización: ', '')],
+        ['']
+    ];
+
+    const headers = [['#', 'Producto', 'Cantidad/Comentario', 'Código', 'Bodega']];
     const data = Array.from(pedidoList.rows).map(row => [
-        row.cells[0].innerText, // Número
-        row.cells[1].innerText, // Producto
-        row.cells[2].querySelector('input').value, // Cantidad/Comentario
-        row.cells[3].innerText, // Código
-        row.cells[4].innerText  // Bodega
+        row.cells[0].innerText,
+        row.cells[1].innerText,
+        row.cells[2].querySelector('input').value,
+        row.cells[3].innerText,
+        row.cells[4].innerText
     ]);
 
-    // Añadir los encabezados al inicio del array
-    data.unshift(headers);
+    const finalData = [...encabezadoInfo, ...headers, ...data];
 
-    // Crear un libro de trabajo y una hoja de trabajo
     const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.aoa_to_sheet(data);
+    const ws = XLSX.utils.aoa_to_sheet(finalData);
     XLSX.utils.book_append_sheet(wb, ws, 'Lista de Pedido');
 
-    // Generar el archivo Excel y descargarlo
-    const fechaActual = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-    const nombreArchivo = `Lista_Pedido_${fechaActual}.xlsx`;
     XLSX.writeFile(wb, nombreArchivo);
 });
+// FIN
+
 
 
     // Módulo: Función para actualizar los datos en JSONBin.io
