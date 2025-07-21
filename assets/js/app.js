@@ -4,16 +4,16 @@
 const googleSheetsApiKey = 'AIzaSyAvWylEG-2jRlgYXZBEcPtAWvV-fyBPZgo';
 
 // API Key o Access Key para JSONBin.io
-const jsonBinApiKey = '$2a$10$m8/kAA2EcZuXcwUQ3Z.gV.cPXgDeYn51mUvEYr9hh1QwElmFYq8FK';  // Reemplaza con la API Key correcta
+const jsonBinApiKey = '$2a$10$xpn3kKBKYyK1/ki3WO8qOemb.PgeFPLROIcRXbg41SRXmQdYprsvC';  // Reemplaza con la API Key correcta
 
 // Identificadores de Bin en JSONBin.io
 const binIds = {
-    lista_sexta_calle: '682e229e8960c979a59eb25a',
-    lista_centro_comercial: '682e22d58561e97a50191681',
-    lista_avenida_morazan: '682e22f98a456b7966a2f188',
-    lista_pedido_bodeguita: '682e22e48960c979a59eb275', // Nueva lista
-    sala_venta_sexta_calle: '682e22b18561e97a5019166b',
-    sala_venta_centro_comercial: '682e22c28a456b7966a2f16e'
+    lista_sexta_calle: '687e669cf7e7a370d1eb869a',
+    lista_centro_comercial: '687e666ff7e7a370d1eb8684',
+    lista_avenida_morazan: '687e662eae596e708fb955e8',
+    lista_pedido_bodeguita: '687e6655ae596e708fb95603', // Nueva lista
+    sala_venta_sexta_calle: '687e668fae596e708fb95624',
+    sala_venta_centro_comercial: '687e66817b4b8670d8a4ec27'
 };
 
 
@@ -539,7 +539,6 @@ document.getElementById('generateExcel').addEventListener('click', () => {
     XLSX.writeFile(wb, nombreArchivo);
 });
 // FIN
-
 
 
     // Módulo: Función para actualizar los datos en JSONBin.io
