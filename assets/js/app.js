@@ -500,66 +500,87 @@ printPDFButton.addEventListener('click', async () => {
 });
 // FIN
 
+// ================================================================================================================
     
-// Función para generar un archivo Excel con la tabla de productos
-document.getElementById('generateExcel').addEventListener('click', () => {
+// Función para generar archivos Excel por bodega y empaquetarlos en un ZIP
+document.getElementById('generateExcel').addEventListener('click', async () => {
     const pedidoList = document.getElementById('pedidoList');
     if (pedidoList.rows.length === 0) {
         Swal.fire('Error', 'No hay productos en la lista para generar Excel.', 'error');
         return;
     }
 
-    const fechaActual = new Date().toISOString().split('T')[0];
+    const fechaActual = new Date().toISOString().split('T')[0]; // yyyy-mm-dd
+    const tienda = document.getElementById('storeTitle').textContent.trim() || 'Tienda';
+    const tipoListaBtn = document.getElementById('switchToSalaVenta');
+    const tipoLista = tipoListaBtn && tipoListaBtn.style.display !== 'none' ? 'SalaVenta' : 'Bodega';
 
-    // Crear los datos del Excel con encabezados
-    const finalData = [
-        ['Codigo', 'Descripcion', 'Cantidad', 'Lote', 'FechaVence']
-    ];
-
-    Array.from(pedidoList.rows).forEach((row) => {
+    // Agrupar productos por bodega
+    const bodegaData = {};
+    Array.from(pedidoList.rows).forEach(row => {
+        const bodega = row.cells[4].innerText.trim();
         const codigo = row.cells[3].innerText.trim();
         const descripcion = row.cells[1].innerText.trim();
         const cantidadInput = row.cells[2].querySelector('input').value.trim();
         const cantidad = cantidadInput.match(/\d+/g) ? parseInt(cantidadInput.match(/\d+/g).join('')) : 0;
-        const lote = ''; // vacío pero se marcará como texto
-        const fechaVence = new Date(1900, 0, 1); // Fecha por defecto (1/1/1900)
+        const lote = '';
+        const fechaVence = new Date(1900, 0, 1); // Fecha base para evitar errores
 
-        finalData.push([codigo, descripcion, cantidad, lote, fechaVence]);
+        if (!bodegaData[bodega]) bodegaData[bodega] = [];
+        bodegaData[bodega].push([codigo, descripcion, cantidad, lote, fechaVence]);
     });
 
-    // Crear libro de Excel
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.aoa_to_sheet(finalData);
+    // Crear un objeto JSZip
+    const zip = new JSZip();
 
-    // Formatear columnas
-    const range = XLSX.utils.decode_range(ws['!ref']);
-    for (let C = 0; C <= range.e.c; ++C) {
-        for (let R = 1; R <= range.e.r; ++R) { // saltar encabezado
-            const cellRef = XLSX.utils.encode_cell({c: C, r: R});
-            if (!ws[cellRef]) continue;
+    // Crear un Excel por cada bodega y añadirlo al ZIP
+    for (const [bodega, productos] of Object.entries(bodegaData)) {
+        const finalData = [['Codigo', 'Descripcion', 'Cantidad', 'Lote', 'FechaVence'], ...productos];
 
-            if (C === 0 || C === 1 || C === 3) {
-                // Codigo, Descripcion, Lote -> texto
-                ws[cellRef].t = 's';
-            } else if (C === 2) {
-                // Cantidad -> número
-                ws[cellRef].t = 'n';
-            } else if (C === 4) {
-                // FechaVence -> fecha personalizada m/d/yyyy
-                ws[cellRef].t = 'd';
-                ws[cellRef].z = 'm/d/yyyy';
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(finalData);
+
+        // Formatear columnas
+        const range = XLSX.utils.decode_range(ws['!ref']);
+        for (let C = 0; C <= range.e.c; ++C) {
+            for (let R = 1; R <= range.e.r; ++R) {
+                const cellRef = XLSX.utils.encode_cell({c: C, r: R});
+                if (!ws[cellRef]) continue;
+
+                if (C === 0 || C === 1 || C === 3) ws[cellRef].t = 's'; // Texto
+                else if (C === 2) ws[cellRef].t = 'n'; // Número
+                else if (C === 4) { // Fecha
+                    ws[cellRef].t = 'd';
+                    ws[cellRef].z = 'm/d/yyyy';
+                }
             }
         }
+
+        XLSX.utils.book_append_sheet(wb, ws, 'Lista de Pedido');
+
+        // Generar archivo Excel como Blob
+        const excelFileName = `Lista_Pedido_${fechaActual}_${tienda}_${tipoLista}_${bodega}.xlsx`;
+        const wbout = XLSX.write(wb, {bookType:'xlsx', type:'array'});
+        zip.file(excelFileName, wbout);
     }
 
-    XLSX.utils.book_append_sheet(wb, ws, 'Lista de Pedido');
+    // Generar el ZIP
+    const content = await zip.generateAsync({type:"blob"});
+    const zipFileName = `Lista_Pedido_${fechaActual}_${tienda}_${tipoLista}.zip`;
 
-    // Guardar archivo
-    const excelFileName = `Lista_Pedido_${fechaActual}.xlsx`;
-    XLSX.writeFile(wb, excelFileName);
+    // Descargar el ZIP
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(content);
+    link.download = zipFileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    Swal.fire('Éxito', 'Se han generado los archivos Excel por bodega y empaquetados en un ZIP.', 'success');
 });
 
 
+// ================================================================================================================
 
 
 // FIN
