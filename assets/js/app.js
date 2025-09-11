@@ -501,8 +501,7 @@ printPDFButton.addEventListener('click', async () => {
 // FIN
 
     
-    // Función para generar un archivo Excel con la tabla de productos
-// INICIO: Generar Excel con encabezado extendido
+// Función para generar un archivo Excel con la tabla de productos
 document.getElementById('generateExcel').addEventListener('click', () => {
     const pedidoList = document.getElementById('pedidoList');
     if (pedidoList.rows.length === 0) {
@@ -510,34 +509,59 @@ document.getElementById('generateExcel').addEventListener('click', () => {
         return;
     }
 
-    const fechaGuardadoTexto = document.getElementById('fechaLista').textContent || '';
     const fechaActual = new Date().toISOString().split('T')[0];
-    const nombreArchivo = `Lista_Pedido_${fechaActual}.xlsx`;
 
-    // Metadatos
-    const encabezadoInfo = [
-        ['Tienda:', storeName],
-        ['Fecha de última actualización:', fechaGuardadoTexto.replace('Última actualización: ', '')],
-        ['']
+    // Crear los datos del Excel con encabezados
+    const finalData = [
+        ['Codigo', 'Descripcion', 'Cantidad', 'Lote', 'FechaVence']
     ];
 
-    const headers = [['#', 'Producto', 'Cantidad/Comentario', 'Código', 'Bodega']];
-    const data = Array.from(pedidoList.rows).map(row => [
-        row.cells[0].innerText,
-        row.cells[1].innerText,
-        row.cells[2].querySelector('input').value,
-        row.cells[3].innerText,
-        row.cells[4].innerText
-    ]);
+    Array.from(pedidoList.rows).forEach((row) => {
+        const codigo = row.cells[3].innerText.trim();
+        const descripcion = row.cells[1].innerText.trim();
+        const cantidadInput = row.cells[2].querySelector('input').value.trim();
+        const cantidad = cantidadInput.match(/\d+/g) ? parseInt(cantidadInput.match(/\d+/g).join('')) : 0;
+        const lote = ''; // vacío pero se marcará como texto
+        const fechaVence = new Date(1900, 0, 1); // Fecha por defecto (1/1/1900)
 
-    const finalData = [...encabezadoInfo, ...headers, ...data];
+        finalData.push([codigo, descripcion, cantidad, lote, fechaVence]);
+    });
 
+    // Crear libro de Excel
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.aoa_to_sheet(finalData);
+
+    // Formatear columnas
+    const range = XLSX.utils.decode_range(ws['!ref']);
+    for (let C = 0; C <= range.e.c; ++C) {
+        for (let R = 1; R <= range.e.r; ++R) { // saltar encabezado
+            const cellRef = XLSX.utils.encode_cell({c: C, r: R});
+            if (!ws[cellRef]) continue;
+
+            if (C === 0 || C === 1 || C === 3) {
+                // Codigo, Descripcion, Lote -> texto
+                ws[cellRef].t = 's';
+            } else if (C === 2) {
+                // Cantidad -> número
+                ws[cellRef].t = 'n';
+            } else if (C === 4) {
+                // FechaVence -> fecha personalizada m/d/yyyy
+                ws[cellRef].t = 'd';
+                ws[cellRef].z = 'm/d/yyyy';
+            }
+        }
+    }
+
     XLSX.utils.book_append_sheet(wb, ws, 'Lista de Pedido');
 
-    XLSX.writeFile(wb, nombreArchivo);
+    // Guardar archivo
+    const excelFileName = `Lista_Pedido_${fechaActual}.xlsx`;
+    XLSX.writeFile(wb, excelFileName);
 });
+
+
+
+
 // FIN
 
 
