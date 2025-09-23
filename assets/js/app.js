@@ -73,7 +73,7 @@ function mostrarFechaLista(fechaGuardado) {
 // Cargar productos desde Google Sheets utilizando la API
 function loadProductsFromGoogleSheets() {
     const sheetId = '1b5B9vp0GKc4T_mORssdj-J2vgc-xEO5YAFkcrVX-nHI';
-    const sheetRange = 'bd!A2:C5000';
+    const sheetRange = 'bd!A2:D5000';
     
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${sheetRange}?key=${googleSheetsApiKey}`;
     
@@ -195,26 +195,32 @@ if (['lista_sexta_calle', 'lista_centro_comercial'].includes(store)) {
 
     let currentFocus = -1;
 
-    // Búsqueda en Google Sheets mientras se escribe
-    searchInput.addEventListener('input', () => {
-        const searchTerm = searchInput.value.toLowerCase();
-        suggestions.innerHTML = '';
-        currentFocus = -1;
+// Búsqueda en Google Sheets mientras se escribe
+searchInput.addEventListener('input', () => {
+    const searchTerm = searchInput.value.toLowerCase();
+    suggestions.innerHTML = '';
+    currentFocus = -1;
+
+    // Cargar productos desde Google Sheets y filtrar los resultados
+    loadProductsFromGoogleSheets().then(rows => {
+        const filteredData = rows.filter(row => 
+            row[0].toLowerCase().includes(searchTerm) ||   // Nombre del producto
+            (row[3] && row[3].toLowerCase().includes(searchTerm)) // Código de barras (columna D)
+        );
         
-        // Cargar productos desde Google Sheets y filtrar los resultados
-        loadProductsFromGoogleSheets().then(rows => {
-            const filteredData = rows.filter(row => row[0].toLowerCase().includes(searchTerm));
-            if (searchTerm) {
-                filteredData.forEach((producto, index) => {
-                    const suggestionItem = document.createElement('li');
-                    suggestionItem.className = 'list-group-item';
-                    suggestionItem.textContent = producto[0];
-                    suggestionItem.addEventListener('click', () => addProductToPedido(producto));
-                    suggestions.appendChild(suggestionItem);
-                });
-            }
-        });
+        if (searchTerm) {
+            filteredData.forEach((producto, index) => {
+                const suggestionItem = document.createElement('li');
+                suggestionItem.className = 'list-group-item';
+                // Mostrar nombre + código de barras en la sugerencia
+                suggestionItem.textContent = `${producto[0]} (${producto[3] || 'sin código'})`;
+                suggestionItem.addEventListener('click', () => addProductToPedido(producto));
+                suggestions.appendChild(suggestionItem);
+            });
+        }
     });
+});
+
 
     // Módulo: Navegación con teclado en las sugerencias
     // =================================================

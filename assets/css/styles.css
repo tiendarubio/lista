@@ -99,3 +99,6 @@ body {
     background-color: #f8f9fa; /* Fondo claro */
     border-radius: 5px; /* Bordes redondeados */
 }
+#suggestions { max-height: 300px; overflow-y: auto; }
+#suggestions .list-group-item.active { font-weight: 600; }
+
