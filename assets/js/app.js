@@ -428,43 +428,75 @@ doc.save(nombreArchivo);
     // Módulo: Función para generar un PDF de la lista de pedidos
     // ==========================================================
     // INICIO: Generar PDF con validación y metadatos
-generatePDFButton.addEventListener('click', async () => {
+document.getElementById('generatePDF').addEventListener('click', async () => {
     const pedidoList = document.getElementById('pedidoList');
     if (pedidoList.rows.length === 0) {
         Swal.fire('Error', 'No hay productos en la lista para generar PDF.', 'error');
         return;
     }
 
-    const fechaGuardadoTexto = document.getElementById('fechaLista').textContent || '';
-    const fechaGuardado = fechaGuardadoTexto.replace('Última actualización: ', '');
+    const fechaActual = new Date().toISOString().split('T')[0]; // yyyy-mm-dd
+    const tienda = document.getElementById('storeTitle').textContent.trim() || 'Tienda';
+    const tipoListaBtn = document.getElementById('switchToSalaVenta');
+    const tipoLista = tipoListaBtn && tipoListaBtn.style.display !== 'none' ? 'SalaVenta' : 'Bodega';
 
-    const fechaActual = new Date();
-    const fechaFormateadaArchivo = fechaActual.toISOString().split('T')[0];
-    const nombreArchivo = `${storeName.replace(/[^a-zA-Z0-9]/g, '_')}_${fechaFormateadaArchivo}.pdf`;
+    // Agrupar productos por bodega
+    const bodegaData = {};
+    Array.from(pedidoList.rows).forEach(row => {
+        const bodega = row.cells[4].innerText.trim();
+        const codigo = row.cells[3].innerText.trim();
+        const descripcion = row.cells[1].innerText.trim();
+        const cantidad = row.cells[2].querySelector('input').value.trim();
 
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-
-    // Encabezado
-    doc.setFontSize(12);
-    doc.text(`Tienda: ${storeName}`, 10, 10);
-    doc.text(`Fecha de última actualización: ${fechaGuardado}`, 10, 18);
-
-    doc.autoTable({
-        startY: 28,
-        head: [['#', 'Producto', 'Cantidad/Comentario', 'Código', 'Bodega']],
-        body: Array.from(pedidoList.rows).map(row => [
-            row.cells[0].innerText,
-            row.cells[1].innerText,
-            row.cells[2].querySelector('input').value,
-            row.cells[3].innerText,
-            row.cells[4].innerText
-        ]),
-        pageBreak: 'auto'
+        if (!bodegaData[bodega]) bodegaData[bodega] = [];
+        bodegaData[bodega].push([codigo, descripcion, cantidad]);
     });
 
-    doc.save(nombreArchivo);
+    // Crear un objeto JSZip
+    const zip = new JSZip();
+
+    // Crear un PDF por cada bodega
+    for (const [bodega, productos] of Object.entries(bodegaData)) {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        // Encabezado
+        doc.setFontSize(12);
+        doc.text(`Tienda: ${tienda}`, 10, 10);
+        doc.text(`Fecha: ${fechaActual}`, 10, 18);
+        doc.text(`Bodega: ${bodega}`, 10, 26);
+
+        // Generar la tabla
+        doc.autoTable({
+            startY: 36,
+            head: [['#', 'Código', 'Descripción', 'Cantidad']],
+            body: productos.map((p, i) => [i + 1, p[0], p[1], p[2]]),
+            pageBreak: 'auto'
+        });
+
+        // Generar archivo PDF como Blob
+        const pdfBlob = doc.output('blob');
+        //const pdfFileName = `Lista_Pedido_${fechaActual}_${tienda}_${tipoLista}_${bodega}.pdf`;
+        const pdfFileName = `${tienda.replace(/[^a-zA-Z0-9]/g,'_')}_${bodega.replace(/[^a-zA-Z0-9]/g,'_')}_${fechaActual}_${tipoLista}.pdf`;
+        zip.file(pdfFileName, pdfBlob);
+    }
+
+    // Generar el ZIP del PDF
+    const content = await zip.generateAsync({ type: "blob" });
+    //const zipFileName = `Lista_Pedido_${fechaActual}_${tienda}_${tipoLista}_PDF.zip`;
+    const zipFileName = `${tienda.replace(/[^a-zA-Z0-9]/g,'_')}_Lista_Pedido_${fechaActual}_${tipoLista}_PDF.zip`;
+
+    // Descargar el ZIP del PDF
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(content);
+    link.download = zipFileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    Swal.fire('Éxito', 'Se han generado los archivos PDF por bodega y empaquetados en un ZIP.', 'success');
 });
+
 // FIN
 
     
@@ -565,16 +597,18 @@ document.getElementById('generateExcel').addEventListener('click', async () => {
         XLSX.utils.book_append_sheet(wb, ws, 'Lista de Pedido');
 
         // Generar archivo Excel como Blob
-        const excelFileName = `Lista_Pedido_${fechaActual}_${tienda}_${tipoLista}_${bodega}.xlsx`;
+        //const excelFileName = `Lista_Pedido_${fechaActual}_${tienda}_${tipoLista}_${bodega}.xlsx`;
+        const excelFileName = `${tienda.replace(/[^a-zA-Z0-9]/g,'_')}_${bodega.replace(/[^a-zA-Z0-9]/g,'_')}_${fechaActual}_${tipoLista}.xlsx`;
         const wbout = XLSX.write(wb, {bookType:'xlsx', type:'array'});
         zip.file(excelFileName, wbout);
     }
 
-    // Generar el ZIP
+    // Generar el ZIP del Excel
     const content = await zip.generateAsync({type:"blob"});
-    const zipFileName = `Lista_Pedido_${fechaActual}_${tienda}_${tipoLista}.zip`;
+    //const zipFileName = `Lista_Pedido_${fechaActual}_${tienda}_${tipoLista}.zip`;
+    const zipFileName = `${tienda.replace(/[^a-zA-Z0-9]/g,'_')}_Lista_Pedido_${fechaActual}_${tipoLista}.zip`;
 
-    // Descargar el ZIP
+    // Descargar el ZIP del Excel
     const link = document.createElement('a');
     link.href = URL.createObjectURL(content);
     link.download = zipFileName;
