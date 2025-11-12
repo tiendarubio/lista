@@ -21,12 +21,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   const btnScanStop = $('btnScanStop');
   const fileScan = $('fileScan');
 
-  // ---- Normalizer ----
-  const norm = s => String(s || '')
-    .replace(/[\r\n\t\u200B-\u200D\u2060\uFEFF]/g, '')
-    .trim()
-    .replace(/^[^0-9A-Za-z]+|[^0-9A-Za-z]+$/g, '');
-
   let sortAsc = true;
   let lastUpdateISO = null;
   let mediaStream = null;
@@ -51,7 +45,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (rec && Array.isArray(rec.items)){
       rec.items.forEach(addRowFromData);
       renumber();
-      lastUpdateISO = rec.meta?.updatedAt || null; // last saved
+      lastUpdateISO = rec.meta?.updatedAt || null;
     } else {
       lastUpdateISO = null;
     }
@@ -62,7 +56,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Autocomplete search
   let currentFocus = -1;
   searchInput.addEventListener('input', () => {
-    const q = norm(searchInput.value).toLowerCase();
+    const q = (searchInput.value || '').replace(/\r|\n/g,'').trim().toLowerCase();
     suggestions.innerHTML = '';
     currentFocus = -1;
     if (!q) return;
@@ -70,9 +64,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadProductsFromGoogleSheets().then(rows => {
       rows.filter(r => {
         const n = (r[0]||'').toLowerCase();
-        const cod = norm(r[1] || '').toLowerCase();
+        const cod = (r[1]||'').toLowerCase();
         const bod = (r[2]||'').toLowerCase();
-        const bar = norm(r[3] || '').toLowerCase();
+        const bar = (r[3]||'').toLowerCase();
         return n.includes(q) || cod.includes(q) || bod.includes(q) || bar.includes(q);
       }).slice(0,50).forEach(r => {
         const li = document.createElement('li');
@@ -91,7 +85,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     });
   });
-
   searchInput.addEventListener('keydown', (e) => {
     const items = suggestions.getElementsByTagName('li');
     if (e.key === 'ArrowDown'){ currentFocus++; addActive(items); }
@@ -100,13 +93,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       e.preventDefault();
       if (currentFocus > -1 && items[currentFocus]) items[currentFocus].click();
       else {
-        const q = norm(searchInput.value || '');
+        const q = (searchInput.value || '').replace(/\r|\n/g,'').trim();
         if (!q) return;
         const rows = (window.CATALOGO_CACHE || []);
         let match = null;
         for (const r of rows){
-          const bar = norm(r[3] ? String(r[3]).trim() : '');
-          const cod = norm(r[1] ? String(r[1]).trim() : '');
+          const bar = r[3] ? String(r[3]).trim() : '';
+          const cod = r[1] ? String(r[1]).trim() : '';
           if (bar === q || cod === q){ match = r; break; }
         }
         if (match){
@@ -125,15 +118,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     items[currentFocus].scrollIntoView({ block:'nearest' });
   }
 
+  function htmlAttrEscape(v){
+    if (v === null || v === undefined) return '';
+    return String(v).replace(/"/g, '&quot;');
+  }
+
   function addRowFromData(item){
     const tr = document.createElement('tr');
+    const qtyValue = htmlAttrEscape(item.cantidad ?? '');
     tr.innerHTML = `
       <td></td>
       <td>${item.codigo_barras||''}</td>
       <td>${item.nombre||''}</td>
       <td>${item.codigo_inventario||'N/A'}</td>
       <td>${item.bodega||''}</td>
-      <td><input type="text" class="form-control form-control-sm qty" placeholder="0"></td>
+      <td>
+        <input type="text" class="form-control form-control-sm qty" value="${qtyValue}" placeholder="0">
+      </td>
       <td class="text-center">
         <button class="btn btn-icon btn-outline-primary btn-toggle ${item.revisado?'on':'off'}" title="Revisado">
           <i class="fa-solid fa-clipboard-check"></i>
@@ -202,7 +203,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }).catch(e => Swal.fire('Error', String(e),'error'));
   });
 
-  // Group items by bodega
+  // Group by bodega
   function groupByBodega(){
     const groups = {};
     [...body.getElementsByTagName('tr')].forEach(tr => {
@@ -283,8 +284,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const codigo = tr.cells[3].innerText.trim(); // codigo_inventario
         const descripcion = tr.cells[2].innerText.trim();
         const cantidadInput = tr.querySelector('.qty')?.value.trim() || '0';
-        const digits = cantidadInput.match(/\d+/g);
-        const cantidad = digits ? parseInt(digits.join('')) : 0;
+        const cantidad = (cantidadInput.match(/\d+/g)) ? parseInt(cantidadInput.match(/\d+/g).join('')) : 0;
         const lote = '';
         const fechaVence = new Date(1900,0,1);
         return [codigo, descripcion, cantidad, lote, fechaVence];
@@ -365,22 +365,23 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ====== Barcode Scanner ======
   async function startScanner(){
     if ('BarcodeDetector' in window){
-      try { detector = new window.BarcodeDetector({ formats: ['ean_13','code_128','code_39','ean_8','upc_a','upc_e'] }); }
-      catch(e){ detector = null; }
+      try {
+        detector = new window.BarcodeDetector({ formats: ['ean_13','code_128','code_39','ean_8','upc_a','upc_e'] });
+      } catch(e){ detector = null; }
     }
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
       Swal.fire('No compatible','Tu navegador no permite usar la cámara.','info');
       return;
     }
     try{
-      const mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+      mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
       scanVideo.srcObject = mediaStream;
       await scanVideo.play();
       scanWrap.classList.add('active');
 
       if (detector){
-        if (window.__scanInterval) clearInterval(window.__scanInterval);
-        window.__scanInterval = setInterval(async () => {
+        if (scanInterval) clearInterval(scanInterval);
+        scanInterval = setInterval(async () => {
           try{
             const barcodes = await detector.detect(scanVideo);
             if (barcodes && barcodes.length){
@@ -393,19 +394,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         }, 250);
       }
     }catch(err){
+      console.error(err);
       Swal.fire('Cámara no disponible','No se pudo acceder a la cámara.','error');
     }
   }
 
   async function stopScanner(){
-    if (window.__scanInterval){ clearInterval(window.__scanInterval); window.__scanInterval = null; }
-    const s = scanVideo.srcObject;
-    if (s){ s.getTracks().forEach(t => t.stop()); }
+    if (scanInterval){ clearInterval(scanInterval); scanInterval = null; }
+    if (mediaStream){
+      mediaStream.getTracks().forEach(t => t.stop());
+      mediaStream = null;
+    }
     scanWrap.classList.remove('active');
   }
 
   async function onBarcodeFound(code){
-    code = norm(code);
     await stopScanner();
     searchInput.value = code;
     const e = new KeyboardEvent('keydown', { key:'Enter' });
