@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', async () => {
   const $ = (id) => document.getElementById(id);
   const storeSelect = $('storeSelect');
+  const versionSelect = $('versionSelect');
   const storeBadge = $('storeBadge');
   const storeBadgeText = $('storeBadgeText');
   const lastSaved = $('lastSaved');
@@ -40,7 +41,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   async function loadStoreState(){
     body.innerHTML = '';
-    const binId = STORE_BINS[storeSelect.value];
+    const binId = getBinId(storeSelect.value, versionSelect.value);
     const rec = await loadFromBin(binId);
     if (rec && Array.isArray(rec.items)){
       rec.items.forEach(addRowFromData);
@@ -194,7 +195,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Save
   btnSave.addEventListener('click', () => {
-    const binId = STORE_BINS[storeSelect.value];
+    const binId = getBinId(storeSelect.value, versionSelect.value);
     const payload = collectPayload();
     saveToBin(binId, payload).then(() => {
       lastUpdateISO = payload.meta.updatedAt;
@@ -345,7 +346,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if(res.isConfirmed){
           body.innerHTML = '';
           renumber();
-          const binId = STORE_BINS[storeSelect.value];
+          const binId = getBinId(storeSelect.value, versionSelect.value);
           const payload = collectPayload(); // now empty
           saveToBin(binId, payload).then(() => {
             lastUpdateISO = payload.meta.updatedAt;
@@ -356,9 +357,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
   });
 
-  // Store change
+  // Store/version change
   storeSelect.addEventListener('change', async () => {
     updateStoreUI();
+    await loadStoreState();
+  });
+  versionSelect.addEventListener('change', async () => {
     await loadStoreState();
   });
 

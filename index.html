@@ -18,12 +18,23 @@
 
     <div class="header-wrap mb-3">
       <div class="store-select w-100">
-        <label class="form-label fw-bold">Seleccionar tienda</label>
-        <select id="storeSelect" class="form-select">
-          <option value="lista_sexta_calle">Sexta Calle</option>
-          <option value="lista_avenida_morazan" selected>Avenida Morazán</option>
-          <option value="lista_centro_comercial">Centro Comercial</option>
-        </select>
+        <div class="row g-2 align-items-end">
+          <div class="col-12 col-lg-8">
+            <label for="storeSelect" class="form-label fw-bold mb-0">Seleccionar tienda</label>
+            <select id="storeSelect" class="form-select">
+              <option value="lista_sexta_calle">Sexta Calle</option>
+              <option value="lista_avenida_morazan" selected>Avenida Morazán</option>
+              <option value="lista_centro_comercial">Centro Comercial</option>
+            </select>
+          </div>
+          <div class="col-12 col-lg-4">
+            <label for="versionSelect" class="form-label fw-bold mb-0">Versión</label>
+            <select id="versionSelect" class="form-select">
+              <option value="base" selected>Principal</option>
+              <option value="alterna">Alterna</option>
+            </select>
+          </div>
+        </div>
       </div>
 
       <div class="header-row">
@@ -42,7 +53,9 @@
           <label class="form-label">Buscar producto (catálogo)</label>
           <div class="input-group">
             <input id="searchInput" type="text" class="form-control" placeholder="Nombre, código inventario o código de barras">
-            <button id="btnScan" class="btn btn-outline-secondary" type="button" title="Escanear código de barras"><i class="fa-solid fa-qrcode"></i> Escanear</button>
+            <button id="btnScan" class="btn btn-outline-secondary" type="button" title="Escanear código de barras">
+              <i class="fa-solid fa-qrcode"></i> Escanear
+            </button>
           </div>
           <ul id="suggestions" class="list-group position-absolute w-100" style="z-index:1000;"></ul>
         </div>

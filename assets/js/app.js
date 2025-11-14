@@ -2,12 +2,18 @@
 const googleSheetsApiKey = 'AIzaSyAvWylEG-2jRlgYXZBEcPtAWvV-fyBPZgo';
 const jsonBinApiKey = '$2a$10$CyV/uYa20LDnSOfu7H/tTOsf96pmltAC/RkQTx73zfXsbCsXk7BxW';
 
-/** BINs por tienda */
+/** BINs por tienda (principal y alterna) */
 const STORE_BINS = {
-  lista_sexta_calle: '68c5b46ed0ea881f407ce556',
-  lista_centro_comercial: '68c5b4add0ea881f407ce586',
-  lista_avenida_morazan: '68c5b4e043b1c97be941f83f'
+  lista_sexta_calle:      { base:'68c5b46ed0ea881f407ce556', alterna:'69174e9943b1c97be9ad5f6b' },
+  lista_centro_comercial: { base:'68c5b4add0ea881f407ce586', alterna:'69174eb7d0ea881f40e85786' },
+  lista_avenida_morazan:  { base:'68c5b4e043b1c97be941f83f', alterna:'69174e1ad0ea881f40e8565f' }
 };
+
+function getBinId(storeKey, versionKey='base'){
+  const rec = STORE_BINS[storeKey];
+  if (!rec) return null;
+  return rec[versionKey] || rec.base;
+}
 
 let CATALOGO_CACHE = null;
 function preloadCatalog(){
