@@ -28,6 +28,28 @@ document.addEventListener('DOMContentLoaded', async () => {
   let scanInterval = null;
   let detector = null;
 
+  // --- Centrar siempre el elemento que tiene el foco (buscador o cantidad) ---
+  function centerOnElement(el) {
+    if (!el) return;
+    setTimeout(() => {
+      const rect = el.getBoundingClientRect();
+      const absoluteTop = rect.top + window.pageYOffset;
+      const middle = absoluteTop - (window.innerHeight / 2) + rect.height / 2;
+      window.scrollTo({
+        top: middle,
+        behavior: 'smooth'
+      });
+    }, 0);
+  }
+
+  // Cuando el foco entra al buscador o a un input .qty, lo centramos
+  document.addEventListener('focusin', (e) => {
+    const t = e.target;
+    if (t === searchInput || t.classList.contains('qty')) {
+      centerOnElement(t);
+    }
+  });
+
   function updateStoreUI(){
     const val = storeSelect.value;
     storeBadge.classList.remove('badge-sexta','badge-morazan','badge-centro');
@@ -89,6 +111,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     });
   });
+
   searchInput.addEventListener('keydown', (e) => {
     const items = suggestions.getElementsByTagName('li');
     if (e.key === 'ArrowDown'){ currentFocus++; addActive(items); }
@@ -113,6 +136,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     }
   });
+
   function addActive(items){
     if (!items || !items.length) return;
     [...items].forEach(x=>x.classList.remove('active'));
@@ -121,6 +145,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     items[currentFocus].classList.add('active');
     items[currentFocus].scrollIntoView({ block:'nearest' });
   }
+
+  // --- Cerrar sugerencias al hacer click fuera del buscador y de la lista ---
+  document.addEventListener('click', (e) => {
+    const target = e.target;
+    if (target === searchInput || suggestions.contains(target)) {
+      return;
+    }
+    suggestions.innerHTML = '';
+    currentFocus = -1;
+  });
+
+  // --- Cerrar sugerencias con tecla Escape ---
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      suggestions.innerHTML = '';
+      currentFocus = -1;
+    }
+  });
 
   function htmlAttrEscape(v){
     if (v === null || v === undefined) return '';
