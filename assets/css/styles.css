@@ -23,9 +23,25 @@ body{font-family:'Calibri',Arial,sans-serif;background:#f7f7f8}
 .btn-toggle.off{filter:grayscale(1);opacity:.55}
 .btn-toggle.on{filter:none;opacity:1}
 
-#suggestions{max-width:100%;max-height:300px;overflow-y:auto;left:0;right:0}
-#suggestions .list-group-item{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
-#suggestions .list-group-item.active{font-weight:600}
+/* Lista de sugerencias debajo del buscador */
+#suggestions {
+  max-height: 300px;
+  overflow-y: auto;
+  margin-top: .25rem;
+}
+
+/* Cada item: que no se vea aplastado ni cortado raro */
+#suggestions .list-group-item {
+  white-space: normal;       /* permite varias líneas */
+  line-height: 1.4;
+  padding: .35rem .75rem;
+}
+
+/* Item activo cuando navegas con flechas */
+#suggestions .list-group-item.active {
+  font-weight: 600;
+}
+
 
 /* Toolbar */
 .toolbar{display:grid;grid-template-columns: repeat(4, minmax(120px,1fr));gap:10px}

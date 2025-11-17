@@ -54,6 +54,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
   await loadStoreState();
 
+  // → Enfocar la barra de búsqueda al iniciar
+  searchInput.focus();
+
   // Autocomplete search
   let currentFocus = -1;
   searchInput.addEventListener('input', () => {
@@ -163,6 +166,18 @@ document.addEventListener('DOMContentLoaded', async () => {
       Swal.fire({title:'¿Eliminar ítem?',icon:'warning',showCancelButton:true,confirmButtonText:'Eliminar'})
         .then(res => { if(res.isConfirmed){ tr.remove(); renumber(); }});
     });
+
+    // → Foco en Cantidad y ciclo Enter → barra de búsqueda
+    const qtyInput = tr.querySelector('.qty');
+    if (qtyInput) {
+      qtyInput.focus();
+      qtyInput.addEventListener('keydown', (ev) => {
+        if (ev.key === 'Enter') {
+          ev.preventDefault();
+          searchInput.focus();
+        }
+      });
+    }
   }
 
   function toggleBtn(btn){
