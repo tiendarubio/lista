@@ -272,12 +272,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     return groups;
   }
 
-  // PDF per bodega
-  btnPDF.addEventListener('click', async () => {
-    if (body.rows.length === 0){
-      Swal.fire('Error','No hay productos en la lista para generar PDF.','error');
-      return;
-    }
+  // Helpers para exportar PDF
+  async function exportPDFPorBodega(){
     const fechaActual = new Date().toISOString().split('T')[0];
     const tienda = storeSelect.options[storeSelect.selectedIndex].text.trim() || 'Tienda';
     const zip = new JSZip();
@@ -324,14 +320,66 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.body.removeChild(link);
 
     Swal.fire('Éxito','Se generaron los PDF por bodega.','success');
-  });
+  }
 
-  // Excel per bodega — numeric extraction for Cantidad
-  btnExcel.addEventListener('click', async () => {
+  function exportPDFGeneral(){
+    const fechaActual = new Date().toISOString().split('T')[0];
+    const tienda = storeSelect.options[storeSelect.selectedIndex].text.trim() || 'Tienda';
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    doc.setFontSize(12);
+    doc.text(`Tienda: ${tienda}`, 10, 10);
+    doc.text(`Fecha: ${fechaActual}`, 10, 18);
+    const upd = formatSV(lastUpdateISO);
+    doc.text(`Última actualización (guardado): ${upd}`, 10, 26);
+
+    const rows = [...body.getElementsByTagName('tr')].map((tr,i)=>{
+      const codBar = tr.cells[1].innerText.trim();
+      const nombre = tr.cells[2].innerText.trim();
+      const codInv = tr.cells[3].innerText.trim();
+      const bodega = tr.cells[4].innerText.trim();
+      const cantidadTxt = tr.querySelector('.qty')?.value.trim() || '';
+      const revisado = tr.cells[6].querySelector('button').classList.contains('on') ? 'Sí' : 'No';
+      return [i+1, codBar, nombre, codInv, bodega, cantidadTxt, revisado];
+    });
+
+    doc.autoTable({
+      startY: 34,
+      head: [['#','Código de barras','Nombre','Código inventario','Bodega','Cantidad','Revisado']],
+      body: rows,
+      pageBreak:'auto'
+    });
+
+    const fileName = `${tienda.replace(/[^a-zA-Z0-9]/g,'_')}_${fechaActual}_Checklist_GENERAL.pdf`;
+    doc.save(fileName);
+    Swal.fire('Éxito','Se generó el PDF general.','success');
+  }
+
+  // Selector de tipo de PDF
+  btnPDF.addEventListener('click', async () => {
     if (body.rows.length === 0){
-      Swal.fire('Error','No hay productos en la lista para generar Excel.','error');
+      Swal.fire('Error','No hay productos en la lista para generar PDF.','error');
       return;
     }
+    const result = await Swal.fire({
+      title: 'Tipo de PDF',
+      text: '¿Cómo deseas generar el PDF?',
+      icon: 'question',
+      showCancelButton: true,
+      showDenyButton: true,
+      confirmButtonText: 'Por bodega',
+      denyButtonText: 'General',
+      cancelButtonText: 'Cancelar'
+    });
+    if (result.isConfirmed){
+      await exportPDFPorBodega();
+    } else if (result.isDenied){
+      exportPDFGeneral();
+    }
+  });
+
+  // Helpers para exportar Excel
+  async function exportExcelPorBodega(){
     const fechaActual = new Date().toISOString().split('T')[0];
     const tienda = storeSelect.options[storeSelect.selectedIndex].text.trim() || 'Tienda';
     const zip = new JSZip();
@@ -378,6 +426,71 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.body.removeChild(link);
 
     Swal.fire('Éxito','Se generaron los Excel por bodega.','success');
+  }
+
+  function exportExcelGeneral(){
+    const fechaActual = new Date().toISOString().split('T')[0];
+    const tienda = storeSelect.options[storeSelect.selectedIndex].text.trim() || 'Tienda';
+
+    const rowsTr = [...body.getElementsByTagName('tr')];
+    const productos = rowsTr.map(tr => {
+      const codigo = tr.cells[3].innerText.trim(); // codigo_inventario
+      const descripcion = tr.cells[2].innerText.trim();
+      const cantidadInput = tr.querySelector('.qty')?.value.trim() || '0';
+      const cantidad = (cantidadInput.match(/\d+/g)) ? parseInt(cantidadInput.match(/\d+/g).join('')) : 0;
+      const lote = '';
+      const fechaVence = new Date(1900,0,1);
+      return [codigo, descripcion, cantidad, lote, fechaVence];
+    });
+
+    const finalData = [['Codigo','Descripcion','Cantidad','Lote','FechaVence'], ...productos];
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(finalData);
+
+    const range = XLSX.utils.decode_range(ws['!ref']);
+    for (let C=0; C<=range.e.c; ++C){
+      for (let R=1; R<=range.e.r; ++R){
+        const cellRef = XLSX.utils.encode_cell({c:C,r:R});
+        if (!ws[cellRef]) continue;
+        if (C===0 || C===1 || C===3) ws[cellRef].t = 's';
+        else if (C===2) ws[cellRef].t = 'n';
+        else if (C===4){ ws[cellRef].t = 'd'; ws[cellRef].z = 'm/d/yyyy'; }
+      }
+    }
+    XLSX.utils.book_append_sheet(wb, ws, 'Lista de Pedido');
+    const wbout = XLSX.write(wb, {bookType:'xlsx', type:'array'});
+    const blob = new Blob([wbout], { type:'application/octet-stream' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `${tienda.replace(/[^a-zA-Z0-9]/g,'_')}_${fechaActual}_Checklist_GENERAL.xlsx`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    Swal.fire('Éxito','Se generó el Excel general.','success');
+  }
+
+  // Selector de tipo de Excel
+  btnExcel.addEventListener('click', async () => {
+    if (body.rows.length === 0){
+      Swal.fire('Error','No hay productos en la lista para generar Excel.','error');
+      return;
+    }
+    const result = await Swal.fire({
+      title: 'Tipo de Excel',
+      text: '¿Cómo deseas generar el Excel?',
+      icon: 'question',
+      showCancelButton: true,
+      showDenyButton: true,
+      confirmButtonText: 'Por bodega',
+      denyButtonText: 'General',
+      cancelButtonText: 'Cancelar'
+    });
+    if (result.isConfirmed){
+      await exportExcelPorBodega();
+    } else if (result.isDenied){
+      exportExcelGeneral();
+    }
   });
 
   // Sort by Bodega via header only
